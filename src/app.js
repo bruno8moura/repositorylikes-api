@@ -20,7 +20,24 @@ function validateRepositoryId(request, response, next) {
   return next();
 }
 
-app.use('/repositories/:id', validateRepositoryId);
+function validateIfThereIsAValidRepository(request, response, next) {
+  const { id } = request.params;
+
+  const repositoryIndex = findRepositoryIndex(id);
+  if (repositoryIndex < 0) return response.status(400).json({ message: "Repository not found." }).end();
+
+  return next();
+}
+
+function updateRequestWithRepositoryIndex(request, response, next) {
+  const { id } = request.params;
+
+  const repositoryIndex = findRepositoryIndex(id);  
+  request.foundedRepositoryIndex = repositoryIndex;
+  return next();
+}
+
+app.use('/repositories/:id', validateRepositoryId, validateIfThereIsAValidRepository, updateRequestWithRepositoryIndex);
 
 app.get("/repositories", (request, response) => {
   return response.status(200).json({ repositories }).end();
@@ -44,39 +61,35 @@ app.post("/repositories", (request, response) => {
 });
 
 app.put("/repositories/:id", (request, response) => {
-  const { id } = request.params;
   const { title, url, techs } = request.body;
 
-  const repositoryIndex = repositories.findIndex(repository => repository.id === id);
-
-  if (repositoryIndex < 0) return response.status(400).json({ message: "Repository not found." }).end();
-
-  const foundRepository = repositories[repositoryIndex];
+  const foundRepository = repositories[request.foundedRepositoryIndex];
 
   const repositoryUpdated = {
+    ...foundRepository,
     title,
     url,
     techs
   };
 
-  repositories[repositoryIndex] = {
-    ...foundRepository,
-    ...repositoryUpdated
-  };
+  repositories[request.foundedRepositoryIndex] = repositoryUpdated;
 
-  return response.status(200).json(repositories[repositoryIndex]).end();
+  return response.status(200).json(repositoryUpdated).end();
 
 });
 
 app.delete("/repositories/:id", (request, response) => {
-  const {id} = request.params;
-  const repositoryIndex = repositories.findIndex(repository => repository.id === id);
-  repositories.splice(repositoryIndex, 1);
+  const index = request.foundedRepositoryIndex;
+  repositories.splice(index, 1);
   return response.status(204).end();
 });
 
 app.post("/repositories/:id/like", (request, response) => {
   // TODO
 });
+
+const findRepositoryIndex = (id) => {
+  return repositories.findIndex(repository => repository.id === id);
+}
 
 module.exports = app;
