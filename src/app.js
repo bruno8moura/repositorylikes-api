@@ -9,6 +9,7 @@ app.use(express.json());
 app.use(cors());
 
 const repositories = [];
+const likes = [];
 
 function validateRepositoryId(request, response, next) {
   const { id } = request.params;
@@ -32,7 +33,7 @@ function validateIfThereIsAValidRepository(request, response, next) {
 function updateRequestWithRepositoryIndex(request, response, next) {
   const { id } = request.params;
 
-  const repositoryIndex = findRepositoryIndex(id);  
+  const repositoryIndex = findRepositoryIndex(id);
   request.foundedRepositoryIndex = repositoryIndex;
   return next();
 }
@@ -51,7 +52,7 @@ app.post("/repositories", (request, response) => {
     title,
     url,
     techs,
-    like: 0
+    likes: 0
   };
 
   repositories.push(repository);
@@ -84,8 +85,19 @@ app.delete("/repositories/:id", (request, response) => {
   return response.status(204).end();
 });
 
-app.post("/repositories/:id/like", (request, response) => {
-  // TODO
+app.post("/repositories/:id/likes", (request, response) => {
+  const repository = repositories[request.foundedRepositoryIndex];
+  
+  likes.push({
+    id: uuid(),
+    repository,  
+  });
+
+  const repositoryLikes = likes.filter(like => like.repository.id === repository.id);
+
+  repository.likes = repositoryLikes.length;
+  response.setHeader('Location', `/${repository.id}`);
+  return response.status(201).end();
 });
 
 const findRepositoryIndex = (id) => {
