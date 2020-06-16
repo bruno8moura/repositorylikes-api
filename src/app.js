@@ -25,7 +25,7 @@ function validateIfThereIsAValidRepository(request, response, next) {
   const { id } = request.params;
 
   const repositoryIndex = findRepositoryIndex(id);
-  if (repositoryIndex < 0) return response.status(400).json({ message: "Repository not found." }).end();
+  if (repositoryIndex < 0) return response.status(400).end();
 
   return next();
 }
@@ -41,7 +41,7 @@ function updateRequestWithRepositoryIndex(request, response, next) {
 app.use('/repositories/:id', validateRepositoryId, validateIfThereIsAValidRepository, updateRequestWithRepositoryIndex);
 
 app.get("/repositories", (request, response) => {
-  return response.status(200).json({ repositories }).end();
+  return response.status(200).json( repositories ).end();
 });
 
 app.post("/repositories", (request, response) => {
@@ -49,8 +49,8 @@ app.post("/repositories", (request, response) => {
 
   const repository = {
     id: uuid(),
-    title,
     url,
+    title,
     techs,
     likes: 0
   };
@@ -58,7 +58,7 @@ app.post("/repositories", (request, response) => {
   repositories.push(repository);
 
   response.setHeader('Location', `/${repository.id}`);
-  return response.status(201).end();
+  return response.status(200).json(repository).end();
 });
 
 app.put("/repositories/:id", (request, response) => {
@@ -85,7 +85,7 @@ app.delete("/repositories/:id", (request, response) => {
   return response.status(204).end();
 });
 
-app.post("/repositories/:id/likes", (request, response) => {
+app.post("/repositories/:id/like", (request, response) => {
   const repository = repositories[request.foundedRepositoryIndex];
   
   likes.push({
@@ -96,8 +96,9 @@ app.post("/repositories/:id/likes", (request, response) => {
   const repositoryLikes = likes.filter(like => like.repository.id === repository.id);
 
   repository.likes = repositoryLikes.length;
+  
   response.setHeader('Location', `/${repository.id}`);
-  return response.status(201).end();
+  return response.status(200).json({ 'likes': repository.likes }).end();
 });
 
 const findRepositoryIndex = (id) => {
