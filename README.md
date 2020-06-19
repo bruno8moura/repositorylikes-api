@@ -1,4 +1,4 @@
-# Repository Like
+# Repository Like API
 
 A simple, CRUD, API to record a repository url and give a "like" to it!
 
